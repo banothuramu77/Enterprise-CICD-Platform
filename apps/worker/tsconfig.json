@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "../..",
+    "outDir": "dist",
+    "baseUrl": "../../",
+    "paths": {
+      "@enterprise/shared": ["packages/shared/src/index.ts"]
+    },
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext"
+  },
+  "include": ["src/**/*.ts", "../../packages/shared/src/**/*.ts", "../backend/src/lib/**/*.ts"],
+  "exclude": ["dist", "node_modules"]
+}

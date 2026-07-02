@@ -1,0 +1,105 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String         @id @default(cuid())
+  email          String         @unique
+  fullName       String?
+  passwordHash   String?
+  role           RoleEnum       @default(USER)
+  githubId       String?        @unique
+  githubUsername String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  runs           WorkflowRun[]
+  refreshTokens  RefreshToken[]
+  oAuthAccounts  OAuthAccount[]
+  repositories   Repository[]
+}
+
+model WorkflowRun {
+  id               String      @id @default(cuid())
+  repository       String
+  branch           String
+  status           String      @default("queued")
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  userId           String?
+  user             User?       @relation(fields: [userId], references: [id])
+  repositoryId     String?
+  repositoryEntity Repository? @relation(fields: [repositoryId], references: [id])
+}
+
+model RefreshToken {
+  id        String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model OAuthAccount {
+  id                String @id @default(cuid())
+  provider          String
+  providerAccountId String
+  accessToken       String?
+  userId            String
+  user              User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId], name: "provider_providerAccountId")
+}
+
+model WebhookEvent {
+  id           String   @id @default(cuid())
+  provider     String
+  eventType    String
+  deliveryId   String   @unique
+  payload      String
+  rawPayload   String?
+  signature    String?
+  status       String   @default("received")
+  attempts     Int      @default(0)
+  lastError    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Repository {
+  id           String        @id @default(cuid())
+  githubRepoId String?       @unique
+  ownerId      String
+  owner        User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name         String
+  fullName     String
+  url          String
+  visibility   String?
+  branches     Branch[]
+  workflowRuns WorkflowRun[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@unique([ownerId, name], name: "repository_owner_name_unique")
+}
+
+model Branch {
+  id           String     @id @default(cuid())
+  repositoryId String
+  repository   Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  name         String
+  protected    Boolean    @default(false)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([repositoryId, name], name: "branch_repository_name_unique")
+}
+
+enum RoleEnum {
+  USER
+  ADMIN
+}
